@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css" integrity="sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B" crossorigin="anonymous">
+    <link href="css/shop-homepage.css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <div class="navbar bg-dark">
+        <div class="container">
+          <a class="navbar-brand" href="#">Livecode1</a>
+          <div class="header-right">
+            <input type="text" placeholder="username" v-model="emailLogin" v-if="!isLogin">
+            <input type="password" placeholder="password" v-model="passwordLogin" v-if="!isLogin">
+            <button v-on:click="login()" v-if="!isLogin">Login</button>
+            <button v-on:click="logout()" v-if="isLogin">Logout</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page Content -->
+      <div class="container container-content">
+        <div class="row">
+          <div class="col-lg-3">
+            <div class="list-group">
+              <a href="#" class="list-group-item">All Quotes</a>
+            </div>
+          </div>
+          <!-- /.col-lg-3 -->
+
+          <div class="col-lg-9">
+            <div class="row">
+                <div class="col-lg-9 col-sm-9 portfolio-item">
+                <div class="alert alert-success" role="alert" v-if="message" v-model="message">
+                    {{ message }}
+                </div>
+                <div class="alert alert-danger" role="alert" v-if="errMessage" v-model="errMessage">
+                    {{ errMessage }}
+                </div>
+              </div>
+              <div class="col-lg-9 col-sm-9 portfolio-item">
+                <form>
+                  <div class="form-group">
+                    <textarea class="form-control" rows="3" placeholder="Quotes" v-if="isLogin" v-model="quoteInput"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <button type="button" class="btn btn-primary" v-if="isLogin" v-on:click="submitQuote">Submit</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col-lg-6 col-sm-6 portfolio-item" v-for="quote in quotes">
+                <div class="card h-70">
+                  <div class="card-body">
+                    <h4 class="card-title">
+                      {{ quote.status }}
+                    </h4>
+                    <a href="#" v-if="isLogin">Delete</a> | <a href="#">Translate</a>
+                    <p class="translate font-italic">
+                      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    
+    <!-- /.container -->
+    <script>
+      const app = new Vue({
+        el: '#app',
+        data: {
+          emailLogin: '',
+          passwordLogin: '',
+          loggedUser: '',
+          quoteInput: '',
+          quotes: [],
+          message: '',
+          errMessage: ''
+        },
+        methods: {
+          login: function() {
+            let self = this
+            email = this.emailLogin
+            password = this.passwordLogin
+
+            axios({
+              method: 'post',
+              url: 'http://localhost:3000/users/login',
+              data: {
+                email: email,
+                password: password
+              }
+            })
+              .then(data => {
+                self.errMessage = ''
+                self.messsage = 'login success!'
+                localStorage.setItem('token', data.data.token)
+                window.location.reload();
+              })
+              .catch(err => {
+                self.errMessage = 'login failed! username/password salah!'
+              })
+          },
+          logout: function() {
+            localStorage.removeItem('token')
+            window.location.reload();
+          },
+          submitQuote: function() {
+            let self = this
+            let token = localStorage.getItem('token')
+
+            axios({
+              method: 'post',
+              url: 'http://localhost:3000/quotes',
+              data: {
+                status: this.quoteInput
+              },
+              headers: {
+                access_token: token
+              }
+            })
+              .then(data => {
+                self.quoteInput = ''
+                self.message = 'submit success!'
+                self.quotes.push(data.data)
+              })
+              .catch(err => {
+                console.log(err)
+              })
+          }
+        },
+        created() {
+          let self = this
+          axios({
+              method: 'get',
+              url: 'http://localhost:3000/quotes'
+            })
+              .then(data => {
+                data.data.forEach(data => {
+                  self.quotes.push(data)
+                })
+              })
+              .catch(err => {
+                console.log(err)
+              })
+        },
+        computed: {
+          isLogin: function() {
+            if(localStorage.getItem('token')) {
+              return true
+            } else {
+              return false
+            }
+          }
+        }
+      })
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js" integrity="sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em" crossorigin="anonymous"></script>
+
+
+
+  </body>
+</html>
